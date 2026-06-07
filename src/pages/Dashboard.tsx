@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, Search, Sparkles, Info } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -7,18 +7,37 @@ const chartData = [
   { name: 'Thu', rate: 300.5 }, { name: 'Fri', rate: 301.2 }, { name: 'Sat', rate: 303.0 }, { name: 'Sun', rate: 304.5 }
 ];
 
-const banks = [
-  { name: 'Commercial Bank', buy: '301.50', sell: '305.50', updated: '2 mins ago', logo: 'https://placehold.co/60x60/1e293b/fff?text=CB' },
-  { name: 'Sampath Bank', buy: '300.90', sell: '304.50', updated: '5 mins ago', logo: 'https://placehold.co/60x60/1e293b/fff?text=SB' },
-  { name: 'HNB', buy: '301.00', sell: '304.20', updated: '1 min ago', logo: 'https://placehold.co/60x60/1e293b/fff?text=HNB' },
-  { name: 'BOC', buy: '300.50', sell: '305.00', updated: '10 mins ago', logo: 'https://placehold.co/60x60/1e293b/fff?text=BOC' },
-  { name: 'Hasinn Bank', buy: '300.90', sell: '304.50', updated: '2 mins ago', logo: 'https://placehold.co/60x60/1e293b/fff?text=HB' },
-  { name: 'Bitsita Bank', buy: '300.90', sell: '304.50', updated: '10 mins ago', logo: 'https://placehold.co/60x60/1e293b/fff?text=BB' },
-  { name: 'Porinata Bank', buy: '300.90', sell: '304.50', updated: '10 mins ago', logo: 'https://placehold.co/60x60/1e293b/fff?text=PB' },
-  { name: 'SIMT', buy: '300.90', sell: '304.50', updated: '1 min ago', logo: 'https://placehold.co/60x60/1e293b/fff?text=SM' },
-];
+interface BankRate {
+  bankName: string;
+  bankLogo: string;
+  buyRate: number;
+  sellRate: number;
+  lastUpdated: string;
+}
 
 const Dashboard = () => {
+  const [banks, setBanks] = useState<BankRate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`http://localhost:8080/api/v1/rates/latest?currencyPair=${selectedCurrency}/LKR`)
+      .then(res => res.json())
+      .then(data => {
+        setBanks(data.rates || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch rates", err);
+        setLoading(false);
+      });
+  }, [selectedCurrency]);
+
+  const localBanks = banks.filter(b => b.bankName !== 'Global API');
+  const bestBuy = localBanks.length > 0 ? localBanks.reduce((max, bank) => bank.buyRate > max.buyRate ? bank : max) : null;
+  const bestSell = localBanks.length > 0 ? localBanks.reduce((min, bank) => bank.sellRate < min.sellRate ? bank : min) : null;
+
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-12 space-y-10">
       
@@ -34,18 +53,18 @@ const Dashboard = () => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="glass-card p-4 flex flex-col justify-center border-l-2 border-l-accent/50 group hover:border-accent transition-colors">
-            <div className="text-xs text-slate-400 mb-1 font-medium tracking-wide uppercase">Best USD Buy (LKR)</div>
-            <div className="text-2xl font-bold text-accent mb-2">301.50</div>
+            <div className="text-xs text-slate-400 mb-1 font-medium tracking-wide uppercase">Best {selectedCurrency} Buy (LKR)</div>
+            <div className="text-2xl font-bold text-accent mb-2">{bestBuy ? bestBuy.buyRate.toFixed(2) : '--'}</div>
             <div className="text-xs text-slate-300 font-medium flex items-center gap-2">
-              <img src="https://placehold.co/40x40/1e293b/fff?text=CB" className="w-5 h-5 rounded" alt="CB" /> Commercial Bank
+              {bestBuy ? <><img src={bestBuy.bankLogo} className="w-5 h-5 rounded" alt={bestBuy.bankName} /> {bestBuy.bankName}</> : 'Loading...'}
             </div>
           </div>
           
           <div className="glass-card glow-border-cyan p-4 flex flex-col justify-center border-l-2 border-l-primary/50 group hover:border-primary transition-colors">
-            <div className="text-xs text-slate-400 mb-1 font-medium tracking-wide uppercase">Best USD Sell (LKR)</div>
-            <div className="text-2xl font-bold text-primary mb-2">304.20</div>
+            <div className="text-xs text-slate-400 mb-1 font-medium tracking-wide uppercase">Best {selectedCurrency} Sell (LKR)</div>
+            <div className="text-2xl font-bold text-primary mb-2">{bestSell ? bestSell.sellRate.toFixed(2) : '--'}</div>
             <div className="text-xs text-slate-300 font-medium flex items-center gap-2">
-              <img src="https://placehold.co/40x40/1e293b/fff?text=HNB" className="w-5 h-5 rounded" alt="HNB" /> HNB
+              {bestSell ? <><img src={bestSell.bankLogo} className="w-5 h-5 rounded" alt={bestSell.bankName} /> {bestSell.bankName}</> : 'Loading...'}
             </div>
           </div>
           
@@ -54,7 +73,7 @@ const Dashboard = () => {
               <div className="p-1.5 bg-primary/20 rounded-md"><Sparkles className="h-3 w-3 text-primary" /></div>
               <div className="text-xs text-slate-400 font-medium tracking-wide uppercase">Most Active</div>
             </div>
-            <div className="text-xl font-bold text-white mb-1">USD/LKR</div>
+            <div className="text-xl font-bold text-white mb-1">{selectedCurrency}/LKR</div>
             <div className="text-xs text-accent font-medium">+0.75% Daily</div>
           </div>
           
@@ -81,10 +100,17 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="flex gap-2">
-             <select className="bg-[#0f172a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary/50">
-              <option>USD</option>
-              <option>EUR</option>
-              <option>GBP</option>
+             <select 
+              value={selectedCurrency}
+              onChange={(e) => setSelectedCurrency(e.target.value)}
+              className="bg-[#0f172a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary/50"
+             >
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+              <option value="JPY">JPY</option>
+              <option value="AUD">AUD</option>
+              <option value="SGD">SGD</option>
             </select>
             <div className="relative">
               <Search className="h-3.5 w-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -94,25 +120,31 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 relative z-10">
-          {banks.map((bank, index) => (
-            <div key={index} className="glass-card p-3 flex items-center gap-3 hover:border-primary/30 transition-colors cursor-pointer group">
-              <img src={bank.logo} alt={bank.name} className="w-10 h-10 rounded-lg bg-white border border-white/10 group-hover:scale-105 transition-transform" />
-              <div className="flex-1">
-                <div className="text-slate-200 font-bold text-xs mb-1.5">{bank.name}</div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <div>
-                    <span className="text-slate-500 block mb-0.5">Buy Rate</span>
-                    <span className="text-accent font-bold">{bank.buy}</span>
+          {loading ? (
+            <div className="col-span-full text-center text-slate-400 py-10">Loading live rates...</div>
+          ) : banks.length === 0 ? (
+            <div className="col-span-full text-center text-slate-400 py-10">No rates available for this currency pair yet.</div>
+          ) : (
+            banks.map((bank, index) => (
+              <div key={index} className="glass-card p-3 flex items-center gap-3 hover:border-primary/30 transition-colors cursor-pointer group">
+                <img src={bank.bankLogo} alt={bank.bankName} className="w-10 h-10 rounded-lg bg-white border border-white/10 group-hover:scale-105 transition-transform" />
+                <div className="flex-1">
+                  <div className="text-slate-200 font-bold text-xs mb-1.5">{bank.bankName}</div>
+                  <div className="flex justify-between items-center text-[11px]">
+                    <div>
+                      <span className="text-slate-500 block mb-0.5">Buy Rate</span>
+                      <span className="text-accent font-bold">{bank.buyRate.toFixed(2)}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-500 block mb-0.5">Sell Rate</span>
+                      <span className="text-primary font-bold">{bank.sellRate.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-slate-500 block mb-0.5">Sell Rate</span>
-                    <span className="text-primary font-bold">{bank.sell}</span>
-                  </div>
+                  <div className="text-[9px] text-slate-600 mt-1.5 font-medium">Last Updated: {bank.lastUpdated}</div>
                 </div>
-                <div className="text-[9px] text-slate-600 mt-1.5 font-medium">Last Updated: {bank.updated}</div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 

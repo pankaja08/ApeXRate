@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import "tailwindcss";
-@config "../tailwind.config.js";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   body {
@@ -43,3 +44,24 @@
     @apply bg-clip-text text-transparent bg-gradient-to-r from-[#00FF66] to-[#00B347];
   }
 }
+
+@keyframes floatUp {
+  0% { transform: translateY(120vh) rotate(0deg) scale(0.8); opacity: 0; }
+  10% { opacity: 0.15; }
+  90% { opacity: 0.15; }
+  100% { transform: translateY(-20vh) rotate(360deg) scale(1.2); opacity: 0; }
+}
+
+@keyframes floatUpDelayed {
+  0% { transform: translateY(120vh) rotate(180deg) scale(1); opacity: 0; }
+  10% { opacity: 0.1; }
+  90% { opacity: 0.1; }
+  100% { transform: translateY(-20vh) rotate(-180deg) scale(0.9); opacity: 0; }
+}
+
+.animate-float-1 { animation: floatUp 15s linear infinite; }
+.animate-float-2 { animation: floatUpDelayed 22s linear infinite; animation-delay: 5s; }
+.animate-float-3 { animation: floatUp 18s linear infinite; animation-delay: 2s; }
+.animate-float-4 { animation: floatUpDelayed 25s linear infinite; animation-delay: 8s; }
+.animate-float-5 { animation: floatUp 20s linear infinite; animation-delay: 12s; }
+
