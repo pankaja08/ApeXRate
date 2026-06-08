@@ -1,0 +1,37 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: apexrate-backend
+  
+  datasource:
+    url: jdbc:postgresql://ep-little-paper-aoqrr59o-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?user=neondb_owner&password=npg_bj8iOErYv7Nu&sslmode=require&channelBinding=require
+    username: neondb_owner
+    password: npg_bj8iOErYv7Nu
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 28869735124-3n8s6n1gjs94393m4q01d5b8h7nnt7o7.apps.googleusercontent.com
+            client-secret: [OAUTH_CLIENT_SECRET]
+            scope:
+              - email
+              - profile
+
+jwt:
+  secret: 9f9f6b8e7d6a5c4b3a2e1d0c9b8a7e6d5c4b3a2e1d0c9b8a7e6d5c4b3a2e1d0c
+  expirationMs: 604800000 # 7 days
+  

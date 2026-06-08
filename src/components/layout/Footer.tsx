@@ -15,7 +15,7 @@ const GithubIcon = ({ className }: { className?: string }) => (
 
 const LinkedinIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
   </svg>
 );
 
@@ -38,7 +38,7 @@ const Footer = () => {
               <a href="#" className="hover:text-primary transition-colors"><LinkedinIcon className="h-5 w-5" /></a>
             </div>
           </div>
-          
+
           <div>
             <h3 className="text-white font-semibold mb-4">Features</h3>
             <ul className="space-y-2 text-sm text-slate-400">
@@ -63,13 +63,13 @@ const Footer = () => {
             <h3 className="text-white font-semibold mb-4">Stay Updated</h3>
             <p className="text-sm text-slate-400 mb-4">Get the latest rate alerts and market forecasts directly in your inbox.</p>
             <form className="flex">
-              <input 
-                type="email" 
-                placeholder="Enter your email" 
+              <input
+                type="email"
+                placeholder="Enter your email"
                 className="bg-surface border border-white/10 rounded-l-lg px-4 py-2 w-full text-sm text-white focus:outline-none focus:border-primary/50 transition-colors"
               />
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="bg-primary hover:bg-primary-dark text-background px-4 py-2 rounded-r-lg font-medium transition-colors"
               >
                 <Mail className="h-5 w-5" />
@@ -77,11 +77,11 @@ const Footer = () => {
             </form>
           </div>
         </div>
-        
+
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-slate-500">© 2026 ApexRate. All rights reserved.</p>
           <div className="flex space-x-4 mt-4 md:mt-0">
-            <span className="text-sm text-slate-500">Data provided for informational purposes only.</span>
+            <span className="text-sm text-slate-500">Researched & Developed by Pankaja Yunidu</span>
           </div>
         </div>
       </div>

@@ -2,11 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, Search, Sparkles, Info } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-const chartData = [
-  { name: 'Mon', rate: 298.5 }, { name: 'Tue', rate: 299.2 }, { name: 'Wed', rate: 299.8 },
-  { name: 'Thu', rate: 300.5 }, { name: 'Fri', rate: 301.2 }, { name: 'Sat', rate: 303.0 }, { name: 'Sun', rate: 304.5 }
-];
-
 interface BankRate {
   bankName: string;
   bankLogo: string;
@@ -19,6 +14,10 @@ const Dashboard = () => {
   const [banks, setBanks] = useState<BankRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const [selectedRange, setSelectedRange] = useState('7D');
+  const [chartData, setChartData] = useState<{ name: string; rate: number }[]>([]);
+  const [historyStats, setHistoryStats] = useState({ highestRate: 0, lowestRate: 0, averageRate: 0 });
+  const [chartLoading, setChartLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -33,6 +32,31 @@ const Dashboard = () => {
         setLoading(false);
       });
   }, [selectedCurrency]);
+
+  useEffect(() => {
+    setChartLoading(true);
+    fetch(`http://localhost:8080/api/v1/rates/history?currencyPair=${selectedCurrency}/LKR&range=${selectedRange}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.points) {
+          const points = data.points.map((p: any) => ({
+            name: p.name,
+            rate: parseFloat(p.rate)
+          }));
+          setChartData(points);
+          setHistoryStats({
+            highestRate: parseFloat(data.highestRate) || 0,
+            lowestRate: parseFloat(data.lowestRate) || 0,
+            averageRate: parseFloat(data.averageRate) || 0
+          });
+        }
+        setChartLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch historical rates", err);
+        setChartLoading(false);
+      });
+  }, [selectedCurrency, selectedRange]);
 
   const localBanks = banks.filter(b => b.bankName !== 'Global API');
   const bestBuy = localBanks.length > 0 ? localBanks.reduce((max, bank) => bank.buyRate > max.buyRate ? bank : max) : null;
@@ -158,13 +182,25 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <select className="bg-[#0f172a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none">
-              <option>USD/LKR</option>
-              <option>EUR/LKR</option>
+            <select 
+              value={selectedCurrency}
+              onChange={(e) => setSelectedCurrency(e.target.value)}
+              className="bg-[#0f172a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary/50"
+            >
+              <option value="USD">USD/LKR</option>
+              <option value="EUR">EUR/LKR</option>
+              <option value="GBP">GBP/LKR</option>
+              <option value="JPY">JPY/LKR</option>
+              <option value="AUD">AUD/LKR</option>
+              <option value="SGD">SGD/LKR</option>
             </select>
             <div className="flex bg-[#0f172a] border border-white/10 rounded-lg p-0.5">
-              {['7D', '30D', '90D', '1Y', '5Y'].map((range, i) => (
-                <button key={i} className={`px-3 py-1 text-xs rounded-md transition-colors ${i === 0 ? 'bg-primary text-background font-semibold shadow-md' : 'text-slate-400 hover:text-white'}`}>
+              {['7D', '30D', '90D', '1Y', '5Y'].map((range) => (
+                <button 
+                  key={range} 
+                  onClick={() => setSelectedRange(range)}
+                  className={`px-3 py-1 text-xs rounded-md transition-colors ${selectedRange === range ? 'bg-primary text-background font-semibold shadow-md' : 'text-slate-400 hover:text-white'}`}
+                >
                   {range}
                 </button>
               ))}
@@ -175,19 +211,19 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 relative z-10">
           <div className="md:col-span-1 flex flex-col gap-3">
             <div className="glass-card p-3.5">
-              <div className="text-xs text-slate-400 mb-0.5 font-medium">Highest Rate (7D)</div>
-              <div className="text-lg font-bold text-white">304.50</div>
+              <div className="text-xs text-slate-400 mb-0.5 font-medium">Highest Rate ({selectedRange})</div>
+              <div className="text-lg font-bold text-white">{chartLoading ? '...' : historyStats.highestRate.toFixed(2)}</div>
             </div>
             <div className="glass-card p-3.5">
-              <div className="text-xs text-slate-400 mb-0.5 font-medium">Lowest Rate (7D)</div>
-              <div className="text-lg font-bold text-white">298.50</div>
+              <div className="text-xs text-slate-400 mb-0.5 font-medium">Lowest Rate ({selectedRange})</div>
+              <div className="text-lg font-bold text-white">{chartLoading ? '...' : historyStats.lowestRate.toFixed(2)}</div>
             </div>
             <div className="glass-card p-3.5">
               <div className="text-xs text-slate-400 mb-0.5 font-medium">Average Rate</div>
-              <div className="text-lg font-bold text-white">301.25</div>
+              <div className="text-lg font-bold text-white">{chartLoading ? '...' : historyStats.averageRate.toFixed(2)}</div>
             </div>
           </div>
-          <div className="md:col-span-4 h-60 w-full bg-[#0f172a]/40 rounded-xl border border-white/5 p-3">
+          <div className={`md:col-span-4 h-60 w-full bg-[#0f172a]/40 rounded-xl border border-white/5 p-3 transition-opacity duration-200 ${chartLoading ? 'opacity-50' : 'opacity-100'}`}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
