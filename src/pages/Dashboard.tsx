@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Search, Sparkles, Info } from 'lucide-react';
+import { TrendingUp, Search, Sparkles, Info, Building2, Star } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface BankRate {
   bankName: string;
@@ -10,7 +12,13 @@ interface BankRate {
   lastUpdated: string;
 }
 
+interface UserProfile {
+  preferredBank?: string;
+  preferredFiatCurrency?: string;
+}
+
 const Dashboard = () => {
+  const { user } = useAuth();
   const [banks, setBanks] = useState<BankRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
@@ -18,6 +26,39 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState<{ name: string; rate: number }[]>([]);
   const [historyStats, setHistoryStats] = useState({ highestRate: 0, lowestRate: 0, averageRate: 0 });
   const [chartLoading, setChartLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [preferredBankRate, setPreferredBankRate] = useState<BankRate | null>(null);
+  const [prefRateLoading, setPrefRateLoading] = useState(false);
+
+  // Fetch user profile on mount
+  useEffect(() => {
+    if (user?.token) {
+      fetch('http://localhost:8080/api/v1/user/profile', {
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) setUserProfile(data);
+        })
+        .catch(() => {});
+    }
+  }, [user]);
+
+  // Fetch preferred bank rate when profile is loaded
+  useEffect(() => {
+    if (userProfile?.preferredBank && userProfile?.preferredFiatCurrency) {
+      setPrefRateLoading(true);
+      fetch(`http://localhost:8080/api/v1/rates/latest?currencyPair=${userProfile.preferredFiatCurrency}/LKR`)
+        .then(res => res.json())
+        .then(data => {
+          const rates: BankRate[] = data.rates || [];
+          const match = rates.find(r => r.bankName === userProfile.preferredBank);
+          setPreferredBankRate(match || null);
+          setPrefRateLoading(false);
+        })
+        .catch(() => setPrefRateLoading(false));
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     setLoading(true);
@@ -62,6 +103,9 @@ const Dashboard = () => {
   const bestBuy = localBanks.length > 0 ? localBanks.reduce((max, bank) => bank.buyRate > max.buyRate ? bank : max) : null;
   const bestSell = localBanks.length > 0 ? localBanks.reduce((min, bank) => bank.sellRate < min.sellRate ? bank : min) : null;
 
+  // Determine if we should show personalized card
+  const hasPreferences = user && userProfile?.preferredBank && userProfile?.preferredFiatCurrency;
+
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-12 space-y-10">
       
@@ -101,14 +145,66 @@ const Dashboard = () => {
             <div className="text-xs text-accent font-medium">+0.75% Daily</div>
           </div>
           
-          <div className="glass-card p-4 flex flex-col justify-center">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-1.5 bg-white/10 rounded-md"><TrendingUp className="h-3 w-3 text-white" /></div>
-              <div className="text-xs text-slate-400 font-medium tracking-wide uppercase">Market Trend</div>
+          {/* 4th Card: Personalized or Market Trend fallback */}
+          {hasPreferences ? (
+            <div className="glass-card p-4 flex flex-col justify-center border-l-2 border-l-yellow-400/50 group hover:border-yellow-400 transition-colors relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-400/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl" />
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="p-1.5 bg-yellow-400/20 rounded-md"><Star className="h-3 w-3 text-yellow-400" /></div>
+                <div className="text-xs text-slate-400 font-medium tracking-wide uppercase">Your Bank</div>
+              </div>
+              {prefRateLoading ? (
+                <div className="text-sm text-slate-400">Loading...</div>
+              ) : preferredBankRate ? (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <img src={preferredBankRate.bankLogo} className="w-6 h-6 rounded bg-white" alt={preferredBankRate.bankName} />
+                    <div className="text-sm font-bold text-white truncate">{preferredBankRate.bankName}</div>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px]">
+                    <div>
+                      <span className="text-slate-500 block mb-0.5">Buy</span>
+                      <span className="text-accent font-bold text-sm">{preferredBankRate.buyRate.toFixed(2)}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-500 block mb-0.5">Sell</span>
+                      <span className="text-primary font-bold text-sm">{preferredBankRate.sellRate.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <div className="text-[9px] text-slate-600 mt-1.5 font-medium">{userProfile?.preferredFiatCurrency}/LKR</div>
+                </>
+              ) : (
+                <div className="text-sm text-slate-400">
+                  <p className="text-white font-medium text-xs">{userProfile?.preferredBank}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">No rate data for {userProfile?.preferredFiatCurrency}</p>
+                </div>
+              )}
             </div>
-            <div className="text-xl font-bold text-white mb-1">Bullish</div>
-            <div className="text-xs text-slate-500 font-medium">Based on 30-day average</div>
-          </div>
+          ) : (
+            <div className="glass-card p-4 flex flex-col justify-center">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 bg-yellow-400/20 rounded-md"><Star className="h-3 w-3 text-yellow-400" /></div>
+                    <div className="text-xs text-slate-400 font-medium tracking-wide uppercase">Personalize</div>
+                  </div>
+                  <div className="text-sm font-bold text-white mb-1">Set Your Preferences</div>
+                  <Link to="/profile" className="text-xs text-primary hover:text-primary/80 font-medium transition-colors">
+                    Go to Profile →
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 bg-white/10 rounded-md"><TrendingUp className="h-3 w-3 text-white" /></div>
+                    <div className="text-xs text-slate-400 font-medium tracking-wide uppercase">Market Trend</div>
+                  </div>
+                  <div className="text-xl font-bold text-white mb-1">Bullish</div>
+                  <div className="text-xs text-slate-500 font-medium">Based on 30-day average</div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -247,3 +343,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

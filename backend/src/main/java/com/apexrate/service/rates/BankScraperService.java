@@ -65,7 +65,9 @@ public class BankScraperService {
         if (clean.contains("EUR") || clean.contains("EURO")) return "EUR/LKR";
         if (clean.contains("GBP") || clean.contains("STERLING") || clean.contains("U.K. POUND") || clean.contains("POUNDS")) return "GBP/LKR";
         if (clean.contains("JPY") || clean.contains("JAPANESE YEN") || clean.contains("YEN")) return "JPY/LKR";
-        if (clean.contains("AUD") || clean.contains("AUSTRALIAN") || clean.contains("AUD")) return "AUD/LKR";
+        // Check SAR/SAUDI before AUD — "SAUDI" contains the substring "AUD" which caused a false match
+        if (clean.contains("SAUDI") || clean.contains("SAR")) return null;
+        if (clean.contains("AUD") || clean.contains("AUSTRALIAN")) return "AUD/LKR";
         if (clean.contains("SGD") || clean.contains("SINGAPORE")) return "SGD/LKR";
         return null;
     }

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, TrendingUp, User as UserIcon } from 'lucide-react';
+import { Menu, X, TrendingUp, User as UserIcon, Bell } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, logout } = useAuth();
   const location = useLocation();
 
@@ -30,6 +31,32 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Poll unread notification count
+  useEffect(() => {
+    if (!user?.token) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const fetchUnreadCount = async () => {
+      try {
+        const res = await fetch('http://localhost:8080/api/v1/notifications/unread-count', {
+          headers: { 'Authorization': `Bearer ${user.token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.count || 0);
+        }
+      } catch (err) {
+        // silently ignore
+      }
+    };
+
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-background/80 backdrop-blur-md border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
@@ -72,7 +99,14 @@ const Navbar = () => {
             <Link to="/converter" className={getLinkClass('/converter')}>Converter</Link>
             <Link to="/assets" className={getLinkClass('/assets')}>Digital Assets</Link>
             <Link to="/forecasts" className={getLinkClass('/forecasts')}>Forecasts</Link>
-            <Link to="/alerts" className={getLinkClass('/alerts')}>Alerts</Link>
+            <Link to="/alerts" className={`${getLinkClass('/alerts')} relative`}>
+              Alerts
+              {unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center bg-primary text-background text-[10px] font-bold rounded-full px-1 shadow-[0_0_8px_rgba(0,240,255,0.5)] animate-pulse">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
             <Link to="/profile" className={getLinkClass('/profile')}>Profile</Link>
           </div>
 
@@ -109,7 +143,14 @@ const Navbar = () => {
             <Link to="/converter" onClick={() => setIsMobileMenuOpen(false)} className={`block text-base font-medium py-2 px-4 rounded-lg ${location.pathname === '/converter' ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Converter</Link>
             <Link to="/assets" onClick={() => setIsMobileMenuOpen(false)} className={`block text-base font-medium py-2 px-4 rounded-lg ${location.pathname === '/assets' ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Digital Assets</Link>
             <Link to="/forecasts" onClick={() => setIsMobileMenuOpen(false)} className={`block text-base font-medium py-2 px-4 rounded-lg ${location.pathname === '/forecasts' ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Forecasts</Link>
-            <Link to="/alerts" onClick={() => setIsMobileMenuOpen(false)} className={`block text-base font-medium py-2 px-4 rounded-lg ${location.pathname === '/alerts' ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Alerts</Link>
+            <Link to="/alerts" onClick={() => setIsMobileMenuOpen(false)} className={`relative inline-flex items-center gap-2 text-base font-medium py-2 px-4 rounded-lg ${location.pathname === '/alerts' ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>
+              Alerts
+              {unreadCount > 0 && (
+                <span className="min-w-[20px] h-[20px] flex items-center justify-center bg-primary text-background text-[11px] font-bold rounded-full px-1">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
             <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className={`block text-base font-medium py-2 px-4 rounded-lg ${location.pathname === '/profile' ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Profile</Link>
             <div className="pt-4 flex flex-col gap-3">
               {user ? (
@@ -135,3 +176,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

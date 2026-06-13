@@ -87,6 +87,15 @@ public class RateUpdateScheduler {
     }
 
     private void createNotification(User user, String message) {
+        // Skip if the same notification was already sent within the last 6 hours
+        LocalDateTime sixHoursAgo = LocalDateTime.now().minusHours(6);
+        boolean alreadySent = notificationRepository.existsByUserIdAndMessageAndCreatedAtAfter(
+                user.getId(), message, sixHoursAgo);
+        if (alreadySent) {
+            System.out.println("Skipping duplicate alert for user " + user.getUsername() + ": " + message);
+            return;
+        }
+
         Notification notification = Notification.builder()
                 .user(user)
                 .message(message)
