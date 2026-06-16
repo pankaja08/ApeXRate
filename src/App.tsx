@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Profile from './pages/Profile';
 import DigitalAssets from './pages/DigitalAssets';
 import Alerts from './pages/Alerts';
+import Forecasts from './pages/Forecasts';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
@@ -26,7 +27,7 @@ function App() {
           <Route path="/assets" element={<DigitalAssets />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/forecasts" element={<div className="pt-32 text-center text-white">Forecasts Page (Coming Soon)</div>} />
+          <Route path="/forecasts" element={<Forecasts />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/profile" element={<Profile />} />
         </Routes>

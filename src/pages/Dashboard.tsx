@@ -3,6 +3,7 @@ import { TrendingUp, Search, Sparkles, Info, Building2, Star } from 'lucide-reac
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import LoadingOverlay from '../components/layout/LoadingOverlay';
 
 interface BankRate {
   bankName: string;
@@ -107,7 +108,9 @@ const Dashboard = () => {
   const hasPreferences = user && userProfile?.preferredBank && userProfile?.preferredFiatCurrency;
 
   return (
-    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-12 space-y-10">
+    <>
+      {loading && <LoadingOverlay message="Fetching latest market exchange rates..." />}
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-12 space-y-10">
       
       {/* Top Section - Summary Cards Layout */}
       <div>
@@ -339,6 +342,7 @@ const Dashboard = () => {
       </div>
 
     </div>
+    </>
   );
 };
 
