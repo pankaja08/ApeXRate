@@ -74,7 +74,7 @@ public class BankScraperService {
 
     private void scrapeAmanaBank() {
         String bankName = "Amana Bank";
-        String logoUrl = "https://www.google.com/s2/favicons?domain=amanabank.lk&sz=128";
+        String logoUrl = "/amana_logo.png";
         String url = "https://www.amanabank.lk/business/treasury/exchange-rates.html";
         try {
             System.out.println("Scraping " + bankName + "...");
@@ -223,7 +223,7 @@ public class BankScraperService {
 
     private void scrapeSeylanBank() {
         String bankName = "Seylan Bank";
-        String logoUrl = "https://www.google.com/s2/favicons?domain=seylan.lk&sz=128";
+        String logoUrl = "/seylan_logo.png";
         String url = "https://www.seylan.lk/exchange-rates";
         try {
             System.out.println("Scraping " + bankName + "...");

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Search, Sparkles, Info, Building2, Star } from 'lucide-react';
+import { TrendingUp, Search, Sparkles, Info, Building2, Star, Download } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import LoadingOverlay from '../components/layout/LoadingOverlay';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface BankRate {
   bankName: string;
@@ -30,6 +32,7 @@ const Dashboard = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [preferredBankRate, setPreferredBankRate] = useState<BankRate | null>(null);
   const [prefRateLoading, setPrefRateLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch user profile on mount
   useEffect(() => {
@@ -104,6 +107,182 @@ const Dashboard = () => {
   const bestBuy = localBanks.length > 0 ? localBanks.reduce((max, bank) => bank.buyRate > max.buyRate ? bank : max) : null;
   const bestSell = localBanks.length > 0 ? localBanks.reduce((min, bank) => bank.sellRate < min.sellRate ? bank : min) : null;
 
+  const downloadPDFReport = () => {
+    const doc = new jsPDF();
+    const now = new Date();
+    
+    // Header banner
+    doc.setFillColor(11, 15, 25);
+    doc.rect(0, 0, 210, 35, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text('ApexRate', 15, 22);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Sri Lankan Exchange Rate Comparison Platform', 15, 28);
+    
+    doc.setTextColor(0, 240, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('EXCHANGE RATE REPORT', 140, 22);
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`Generated: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, 140, 28);
+
+    // Summary header
+    doc.setTextColor(30, 41, 59);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('1. Market Summary', 15, 50);
+    
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.line(15, 53, 195, 53);
+    
+    // Check if best buy/sell are user's preferred bank
+    const isBestBuyPreferred = bestBuy && userProfile?.preferredBank === bestBuy.bankName;
+    const isBestSellPreferred = bestSell && userProfile?.preferredBank === bestSell.bankName;
+
+    // Card 1: Highest Buy Rate
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(15, 60, 85, 30, 3, 3, 'FD');
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`HIGHEST BUY RATE (Best if selling ${selectedCurrency})`, 20, 67);
+    doc.setTextColor(0, 179, 71); // Green
+    doc.setFontSize(18);
+    doc.text(bestBuy ? `${bestBuy.buyRate.toFixed(2)} LKR` : '-- LKR', 20, 77);
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(bestBuy ? `Bank: ${bestBuy.bankName}${isBestBuyPreferred ? ' (Your Bank)' : ''}` : 'Bank: --', 20, 85);
+    
+    // Card 2: Lowest Sell Rate
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(110, 60, 85, 30, 3, 3, 'FD');
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`LOWEST SELL RATE (Best if buying ${selectedCurrency})`, 115, 67);
+    doc.setTextColor(0, 136, 204); // Blue/Cyan
+    doc.setFontSize(18);
+    doc.text(bestSell ? `${bestSell.sellRate.toFixed(2)} LKR` : '-- LKR', 115, 77);
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(bestSell ? `Bank: ${bestSell.bankName}${isBestSellPreferred ? ' (Your Bank)' : ''}` : 'Bank: --', 115, 85);
+
+    // Profile preferences and summary highlight box (Y: 96 to 114)
+    const isPrefCurrency = userProfile?.preferredFiatCurrency === selectedCurrency;
+    if (userProfile?.preferredBank || userProfile?.preferredFiatCurrency) {
+      doc.setFillColor(254, 251, 235); // Light gold/amber fill
+      doc.setDrawColor(245, 158, 11); // Gold border
+      doc.roundedRect(15, 96, 180, 18, 2, 2, 'FD');
+      
+      doc.setTextColor(120, 53, 4); // Dark amber
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.text('PERSONALIZED REPORT INSIGHTS', 20, 101);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(180, 83, 9);
+      
+      const insightParts = [];
+      if (userProfile.preferredBank) {
+        insightParts.push(`Saved Preferred Bank: ${userProfile.preferredBank}`);
+      }
+      if (userProfile.preferredFiatCurrency) {
+        const currencyStatus = isPrefCurrency 
+          ? `Saved Preferred Currency: ${userProfile.preferredFiatCurrency} (Matches Report)`
+          : `Saved Preferred Currency: ${userProfile.preferredFiatCurrency} (Report is for ${selectedCurrency})`;
+        insightParts.push(currencyStatus);
+      }
+      const insightText = insightParts.join('  |  ');
+      doc.text(insightText, 20, 107);
+    } else {
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(15, 96, 180, 18, 2, 2, 'FD');
+      
+      doc.setTextColor(71, 85, 105);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.text('REPORT DETAILS', 20, 101);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Target Currency: ${selectedCurrency} / LKR  |  Preferences: Not set in profile. Visit Profile page to configure.`, 20, 107);
+    }
+
+    // Comparison Table Title (Y: 123)
+    doc.setTextColor(30, 41, 59);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('2. Bank Exchange Rates Comparison', 15, 123);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.line(15, 126, 195, 126);
+
+    // Comparison rows
+    const tableHeaders = [['Bank Name', 'Buy Rate (LKR)', 'Sell Rate (LKR)', 'Last Updated']];
+    const tableRows = banks.map(bank => [
+      bank.bankName === userProfile?.preferredBank ? `${bank.bankName} (Preferred Bank)` : bank.bankName,
+      bank.buyRate.toFixed(2),
+      bank.sellRate.toFixed(2),
+      bank.lastUpdated
+    ]);
+
+    autoTable(doc, {
+      head: tableHeaders,
+      body: tableRows,
+      startY: 131,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [15, 23, 42],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      didParseCell: (data: any) => {
+        if (data.row.section === 'body') {
+          const bankNameText = data.row.cells[0].text[0];
+          if (bankNameText.includes('(Preferred Bank)')) {
+            data.cell.styles.fillColor = [254, 243, 199]; // Light yellow highlight
+            data.cell.styles.textColor = [120, 53, 4];   // Dark amber text
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3
+      }
+    });
+
+    const finalY = (doc as any).lastAutoTable?.finalY || 200;
+    let footerY = finalY + 12;
+    if (footerY + 10 > 285) {
+      doc.addPage();
+      footerY = 20;
+    }
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(148, 163, 184);
+    doc.text('Disclaimer: Exchange rates fluctuate in real-time. Please verify with the respective banks before executing transactions.', 15, footerY);
+    doc.text('Generated via ApeXRate. Researched & Developed by Pankaja Yunidu.', 15, footerY + 5);
+
+    doc.save(`ApexRate_${selectedCurrency}_Report_${now.toISOString().split('T')[0]}.pdf`);
+  };
+
   // Determine if we should show personalized card
   const hasPreferences = user && userProfile?.preferredBank && userProfile?.preferredFiatCurrency;
 
@@ -124,7 +303,10 @@ const Dashboard = () => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="glass-card p-4 flex flex-col justify-center border-l-2 border-l-accent/50 group hover:border-accent transition-colors">
-            <div className="text-xs text-slate-400 mb-1 font-medium tracking-wide uppercase">Best {selectedCurrency} Buy (LKR)</div>
+            <div className="text-xs text-slate-400 mb-1 font-medium tracking-wide uppercase flex flex-col">
+              <span>Highest Buy Rate</span>
+              <span className="text-[10px] text-slate-500 normal-case mt-0.5">(Best if you're selling {selectedCurrency})</span>
+            </div>
             <div className="text-2xl font-bold text-accent mb-2">{bestBuy ? bestBuy.buyRate.toFixed(2) : '--'}</div>
             <div className="text-xs text-slate-300 font-medium flex items-center gap-2">
               {bestBuy ? <><img src={bestBuy.bankLogo} className="w-5 h-5 rounded" alt={bestBuy.bankName} /> {bestBuy.bankName}</> : 'Loading...'}
@@ -132,7 +314,10 @@ const Dashboard = () => {
           </div>
           
           <div className="glass-card glow-border-cyan p-4 flex flex-col justify-center border-l-2 border-l-primary/50 group hover:border-primary transition-colors">
-            <div className="text-xs text-slate-400 mb-1 font-medium tracking-wide uppercase">Best {selectedCurrency} Sell (LKR)</div>
+            <div className="text-xs text-slate-400 mb-1 font-medium tracking-wide uppercase flex flex-col">
+              <span>Lowest Sell Rate</span>
+              <span className="text-[10px] text-slate-500 normal-case mt-0.5">(Best if you're buying {selectedCurrency})</span>
+            </div>
             <div className="text-2xl font-bold text-primary mb-2">{bestSell ? bestSell.sellRate.toFixed(2) : '--'}</div>
             <div className="text-xs text-slate-300 font-medium flex items-center gap-2">
               {bestSell ? <><img src={bestSell.bankLogo} className="w-5 h-5 rounded" alt={bestSell.bankName} /> {bestSell.bankName}</> : 'Loading...'}
@@ -222,22 +407,41 @@ const Dashboard = () => {
               Monitor live exchange rates across all registered banks. The green Buy Rate indicates how much the bank pays you, while the cyan Sell Rate indicates how much the bank charges you.
             </p>
           </div>
-          <div className="flex gap-2">
-             <select 
-              value={selectedCurrency}
-              onChange={(e) => setSelectedCurrency(e.target.value)}
-              className="bg-[#0f172a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary/50"
-             >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
-              <option value="JPY">JPY</option>
-              <option value="AUD">AUD</option>
-              <option value="SGD">SGD</option>
-            </select>
-            <div className="relative">
-              <Search className="h-3.5 w-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input type="text" placeholder="Search Bank..." className="bg-[#0f172a] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary/50 w-full sm:w-48" />
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto items-stretch sm:items-center">
+            {user && (
+              <button 
+                onClick={downloadPDFReport}
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/10 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                title="Download PDF Report"
+              >
+                <Download className="h-4 w-4" />
+                <span>Export PDF</span>
+              </button>
+            )}
+            
+            <div className="flex gap-2 w-full sm:w-auto">
+               <select 
+                value={selectedCurrency}
+                onChange={(e) => setSelectedCurrency(e.target.value)}
+                className="bg-[#0f172a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary/50 flex-1 sm:flex-initial cursor-pointer"
+               >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="JPY">JPY</option>
+                <option value="AUD">AUD</option>
+                <option value="SGD">SGD</option>
+              </select>
+              <div className="relative flex-1 sm:flex-initial">
+                <Search className="h-3.5 w-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input 
+                  type="text" 
+                  placeholder="Search Bank..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="bg-[#0f172a] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary/50 w-full" 
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -247,26 +451,47 @@ const Dashboard = () => {
             <div className="col-span-full text-center text-slate-400 py-10">Loading live rates...</div>
           ) : banks.length === 0 ? (
             <div className="col-span-full text-center text-slate-400 py-10">No rates available for this currency pair yet.</div>
+          ) : banks.filter(bank => bank.bankName.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
+            <div className="col-span-full text-center text-slate-400 py-10">No banks match "{searchTerm}".</div>
           ) : (
-            banks.map((bank, index) => (
-              <div key={index} className="glass-card p-3 flex items-center gap-3 hover:border-primary/30 transition-colors cursor-pointer group">
-                <img src={bank.bankLogo} alt={bank.bankName} className="w-10 h-10 rounded-lg bg-white border border-white/10 group-hover:scale-105 transition-transform" />
-                <div className="flex-1">
-                  <div className="text-slate-200 font-bold text-xs mb-1.5">{bank.bankName}</div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <div>
-                      <span className="text-slate-500 block mb-0.5">Buy Rate</span>
-                      <span className="text-accent font-bold">{bank.buyRate.toFixed(2)}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-slate-500 block mb-0.5">Sell Rate</span>
-                      <span className="text-primary font-bold">{bank.sellRate.toFixed(2)}</span>
+            banks
+              .filter(bank => bank.bankName.toLowerCase().includes(searchTerm.toLowerCase()))
+              .map((bank, index) => {
+                const isPreferred = bank.bankName === userProfile?.preferredBank;
+                return (
+                  <div 
+                    key={index} 
+                    className={`glass-card p-3 flex items-center gap-3 transition-colors cursor-pointer group ${
+                      isPreferred 
+                        ? 'border-yellow-500/40 hover:border-yellow-500/80 shadow-[0_0_12px_rgba(234,179,8,0.15)] bg-yellow-500/[0.02]' 
+                        : 'hover:border-primary/30'
+                    }`}
+                  >
+                    <img src={bank.bankLogo} alt={bank.bankName} className="w-10 h-10 rounded-lg bg-white border border-white/10 group-hover:scale-105 transition-transform" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1 mb-1.5">
+                        <div className="text-slate-200 font-bold text-xs truncate">{bank.bankName}</div>
+                        {isPreferred && (
+                          <span className="text-[9px] font-semibold text-yellow-400 bg-yellow-400/10 px-1.5 py-0.5 rounded flex items-center gap-0.5 shrink-0">
+                            ★ Preferred
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex justify-between items-center text-[11px]">
+                        <div>
+                          <span className="text-slate-500 block mb-0.5">Buy Rate</span>
+                          <span className="text-accent font-bold">{bank.buyRate.toFixed(2)}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-slate-500 block mb-0.5">Sell Rate</span>
+                          <span className="text-primary font-bold">{bank.sellRate.toFixed(2)}</span>
+                        </div>
+                      </div>
+                      <div className="text-[9px] text-slate-600 mt-1.5 font-medium">Last Updated: {bank.lastUpdated}</div>
                     </div>
                   </div>
-                  <div className="text-[9px] text-slate-600 mt-1.5 font-medium">Last Updated: {bank.lastUpdated}</div>
-                </div>
-              </div>
-            ))
+                );
+              })
           )}
         </div>
       </div>
@@ -308,7 +533,7 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 relative z-10">
-          <div className="md:col-span-1 flex flex-col gap-3">
+          <div className="md:col-span-1 grid grid-cols-1 sm:grid-cols-3 md:grid-cols-1 gap-3">
             <div className="glass-card p-3.5">
               <div className="text-xs text-slate-400 mb-0.5 font-medium">Highest Rate ({selectedRange})</div>
               <div className="text-lg font-bold text-white">{chartLoading ? '...' : historyStats.highestRate.toFixed(2)}</div>

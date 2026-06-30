@@ -24,7 +24,7 @@ const WhyChooseUs = () => {
     <section id="why-choose-us" className="py-24 relative z-10 bg-surface/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Why Choose <span className="text-gradient-accent">RateMatrix</span></h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Why Choose <span className="text-gradient-accent">ApeXRate</span></h2>
           <p className="text-slate-400 max-w-2xl mx-auto">
             We provide the most powerful tools to help you track, compare, and forecast currency exchange rates with precision.
           </p>

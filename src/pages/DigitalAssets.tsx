@@ -155,7 +155,7 @@ const DigitalAssets = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 relative z-10">
-          <div className="md:col-span-1 flex flex-col gap-3">
+          <div className="md:col-span-1 grid grid-cols-1 sm:grid-cols-3 md:grid-cols-1 gap-3">
             <div className="glass-card p-3.5">
               <div className="text-xs text-slate-400 mb-0.5 font-medium">Highest Price (7D)</div>
               <div className="text-lg font-bold text-white">$65,100.00</div>

@@ -138,32 +138,57 @@ const Profile = () => {
       >
         {/* Header Banner */}
         <div className="h-32 bg-gradient-to-r from-primary/20 to-blue-500/20 relative">
-          <div className="absolute -bottom-12 left-8">
-            <div className="h-24 w-24 bg-background border-4 border-surface rounded-full flex items-center justify-center shadow-lg">
-              <UserIcon className="h-12 w-12 text-primary" />
+          <div className="absolute -bottom-12 left-4 sm:left-8">
+            <div className="h-20 w-20 sm:h-24 sm:w-24 bg-background border-4 border-surface rounded-full flex items-center justify-center shadow-lg">
+              <UserIcon className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
             </div>
           </div>
-          <div className="absolute top-4 right-4 flex gap-2">
-            {!isEditing ? (
-              <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg backdrop-blur-md transition-colors">
-                <Edit2 className="h-4 w-4" /> Edit Profile
-              </button>
-            ) : (
-              <>
-                <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-100 px-4 py-2 rounded-lg backdrop-blur-md transition-colors">
-                  <X className="h-4 w-4" /> Cancel
+          <div className="absolute top-4 right-4 flex gap-2 z-10">
+            {/* Desktop Actions */}
+            <div className="hidden sm:flex gap-2">
+              {!isEditing ? (
+                <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg backdrop-blur-md transition-colors text-sm">
+                  <Edit2 className="h-4 w-4" /> Edit Profile
                 </button>
-                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-primary text-background font-semibold px-4 py-2 rounded-lg shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all">
-                  <Save className="h-4 w-4" /> {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </>
-            )}
+              ) : (
+                <>
+                  <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-100 px-4 py-2 rounded-lg backdrop-blur-md transition-colors text-sm">
+                    <X className="h-4 w-4" /> Cancel
+                  </button>
+                  <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-primary text-background font-semibold px-4 py-2 rounded-lg shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all text-sm">
+                    <Save className="h-4 w-4" /> {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="pt-16 px-8 pb-8">
-          <h2 className="text-3xl font-bold text-white mb-1">{profile?.name}</h2>
-          <p className="text-primary mb-8">@{profile?.username}</p>
+        <div className="pt-16 px-4 sm:px-8 pb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1">{profile?.name}</h2>
+              <p className="text-primary">@{profile?.username}</p>
+            </div>
+            
+            {/* Mobile Actions Container (visible only on small screens) */}
+            <div className="flex sm:hidden gap-2 mt-2">
+              {!isEditing ? (
+                <button onClick={() => setIsEditing(true)} className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg backdrop-blur-md transition-colors text-sm">
+                  <Edit2 className="h-4 w-4" /> Edit Profile
+                </button>
+              ) : (
+                <>
+                  <button onClick={() => setIsEditing(false)} className="flex-1 flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-100 px-3 py-2.5 rounded-lg backdrop-blur-md transition-colors text-sm">
+                    <X className="h-4 w-4" /> Cancel
+                  </button>
+                  <button onClick={handleSave} disabled={saving} className="flex-1 flex items-center justify-center gap-2 bg-primary text-background font-semibold px-3 py-2.5 rounded-lg shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all text-sm">
+                    <Save className="h-4 w-4" /> {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
 
           {error && <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg mb-6">{error}</div>}
           {success && <div className="bg-green-500/10 border border-green-500/50 text-green-400 p-3 rounded-lg mb-6">{success}</div>}

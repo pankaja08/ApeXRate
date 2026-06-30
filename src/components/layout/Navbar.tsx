@@ -127,10 +127,16 @@ const Navbar = () => {
                 <Link to="/register" className="bg-primary text-background font-semibold px-4 py-2 rounded-lg shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:scale-105 transition-transform">Get Started</Link>
               </>
             )}
-            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-slate-300 hover:text-white ml-2 md:hidden">
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
           </div>
+
+          {/* Mobile Menu Toggle Button */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+            className="text-slate-300 hover:text-white p-2 rounded-lg hover:bg-white/5 transition-colors focus:outline-none md:hidden"
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
       </div>
 

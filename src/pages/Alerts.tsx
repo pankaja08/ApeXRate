@@ -78,25 +78,27 @@ const Alerts = () => {
           {notifications.map(notification => (
             <div 
               key={notification.id} 
-              className={`glass-card p-5 border-l-4 transition-all flex items-start gap-4 ${notification.read ? 'border-l-slate-600 opacity-70' : 'border-l-primary shadow-[0_0_20px_rgba(0,240,255,0.15)]'}`}
+              className={`glass-card p-5 border-l-4 transition-all flex flex-col sm:flex-row items-stretch sm:items-start gap-4 ${notification.read ? 'border-l-slate-600 opacity-70' : 'border-l-primary shadow-[0_0_20px_rgba(0,240,255,0.15)]'}`}
             >
-              <div className={`mt-1 p-2 rounded-full ${notification.read ? 'bg-slate-800' : 'bg-primary/20 animate-pulse'}`}>
-                {notification.read ? <CheckCircle2 className="h-5 w-5 text-slate-400" /> : <Bell className="h-5 w-5 text-primary" />}
-              </div>
-              
-              <div className="flex-1">
-                <p className={`text-lg ${notification.read ? 'text-slate-300' : 'text-white font-medium'}`}>
-                  {notification.message}
-                </p>
-                <p className="text-xs text-slate-500 mt-2">
-                  {new Date(notification.createdAt).toLocaleString()}
-                </p>
+              <div className="flex items-start gap-4 flex-1">
+                <div className={`mt-1 p-2 rounded-full shrink-0 ${notification.read ? 'bg-slate-800' : 'bg-primary/20'}`}>
+                  {notification.read ? <CheckCircle2 className="h-5 w-5 text-slate-400" /> : <Bell className="h-5 w-5 text-primary animate-bounce" />}
+                </div>
+                
+                <div className="flex-1">
+                  <p className={`text-sm md:text-base ${notification.read ? 'text-slate-300' : 'text-white font-medium'}`}>
+                    {notification.message}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {new Date(notification.createdAt).toLocaleString()}
+                  </p>
+                </div>
               </div>
 
               {!notification.read && (
                 <button 
                   onClick={() => markAsRead(notification.id)}
-                  className="text-xs bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg transition-colors border border-white/10"
+                  className="text-xs bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg transition-colors border border-white/10 shrink-0 w-full sm:w-auto text-center self-end sm:self-center"
                 >
                   Mark as Read
                 </button>

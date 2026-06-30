@@ -42,10 +42,12 @@ public class RateUpdateScheduler {
             LocalDateTime lastUpdate = latestRate.get().getTimestamp();
             long hoursSinceLastUpdate = ChronoUnit.HOURS.between(lastUpdate, LocalDateTime.now());
             
+            /*
             if (hoursSinceLastUpdate < 6 && bankRepository.count() >= 6) {
                 System.out.println("Rates were updated " + hoursSinceLastUpdate + " hours ago and all banks are present. Skipping API and scraping requests to prevent rate limiting.");
                 return; 
             }
+            */
         }
 
         System.out.println("Starting scheduled rate update (fetching from external sources)...");

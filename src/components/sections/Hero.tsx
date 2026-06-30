@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ArrowRight, Play, TrendingUp, DollarSign } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface BankRate {
   bankName: string;
@@ -9,17 +10,11 @@ interface BankRate {
   lastUpdated: string;
 }
 
-const Hero = () => {
-  const [banks, setBanks] = useState<BankRate[]>([]);
+interface HeroProps {
+  banks: BankRate[];
+}
 
-  useEffect(() => {
-    fetch('http://localhost:8080/api/v1/rates/latest?currencyPair=USD/LKR')
-      .then(res => res.json())
-      .then(data => {
-        setBanks(data.rates || []);
-      })
-      .catch(console.error);
-  }, []);
+const Hero: React.FC<HeroProps> = ({ banks }) => {
 
   const localBanks = banks.filter(b => b.bankName !== 'Global API');
   const bestBuy = localBanks.length > 0 ? localBanks.reduce((max, bank) => bank.buyRate > max.buyRate ? bank : max) : null;
@@ -62,15 +57,19 @@ const Hero = () => {
               className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary-dark text-background rounded-lg font-semibold transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:shadow-[0_0_30px_rgba(0,240,255,0.6)] transform hover:-translate-y-1">
               Explore Platform <ArrowRight className="h-5 w-5" />
             </button>
-            <button className="w-full sm:w-auto px-8 py-4 bg-surface border border-white/10 hover:bg-white/5 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 backdrop-blur-md">
+            <Link 
+              to="/register"
+              className="w-full sm:w-auto px-8 py-4 bg-surface border border-white/10 hover:bg-white/5 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 backdrop-blur-md"
+            >
               Get Started
-            </button>
+            </Link>
           </div>
         </div>
 
-        {/* Floating Mini Mockups */}
-        <div className="mt-20 relative mx-auto max-w-5xl h-64 hidden md:block">
-          <div className="absolute left-1/2 -translate-x-1/2 top-0 w-full glass-panel rounded-xl p-6 transform hover:-translate-y-2 transition-transform duration-500 shadow-2xl border-t border-white/20">
+        {/* Floating Mini Mockups & Responsive Rate Cards */}
+        <div className="mt-16 md:mt-20 relative mx-auto max-w-5xl h-auto md:h-64">
+          {/* Main Chart Mockup - hidden on mobile/tablet, shown on desktop */}
+          <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 w-full glass-panel rounded-xl p-6 transform hover:-translate-y-2 transition-transform duration-500 shadow-2xl border-t border-white/20">
              <div className="flex justify-between items-center mb-6">
                 <h3 className="text-white font-semibold flex items-center gap-2"><DollarSign className="h-5 w-5 text-accent"/> USD/LKR Forecast</h3>
                 <span className="text-accent text-sm font-medium flex items-center gap-1"><TrendingUp className="h-4 w-4"/> +1.2% Expected</span>
@@ -78,26 +77,29 @@ const Hero = () => {
              {/* Mock Chart Area */}
              <div className="h-32 w-full flex items-end gap-2 px-2">
                 {[40, 50, 45, 60, 55, 75, 80, 70, 85, 95].map((height, i) => (
-                  <div key={i} className="flex-1 bg-gradient-to-t from-primary/20 to-primary/60 rounded-t-sm" style={{ height: `${height}%` }}></div>
+                   <div key={i} className="flex-1 bg-gradient-to-t from-primary/20 to-primary/60 rounded-t-sm" style={{ height: `${height}%` }}></div>
                 ))}
              </div>
           </div>
 
-          <div className="absolute -left-12 top-24 w-64 glass-panel rounded-xl p-4 shadow-xl rotate-[-5deg] animate-[blob_7s_infinite_alternate]">
-            <div className="text-xs text-slate-400 mb-1">Best Buy Rate</div>
-            <div className="text-xl font-bold text-white mb-2">{bestBuy ? bestBuy.buyRate.toFixed(2) : '--'} LKR</div>
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-300">{bestBuy ? bestBuy.bankName : 'Loading...'}</span>
-              <span className="text-accent">+0.4%</span>
+          {/* Rate Cards - stacked/row on mobile/tablet, absolute on md+ */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch md:contents mt-8 md:mt-0">
+            <div className="w-full sm:w-72 md:w-64 glass-panel rounded-xl p-5 shadow-xl md:absolute md:-left-12 md:top-24 md:rotate-[-5deg] md:animate-[blob_7s_infinite_alternate]">
+              <div className="text-xs text-slate-400 mb-1 font-medium tracking-wide uppercase">Highest Buy Rate</div>
+              <div className="text-2xl font-bold text-accent mb-2">{bestBuy ? bestBuy.buyRate.toFixed(2) : '--'} LKR</div>
+              <div className="flex flex-col gap-1 text-xs">
+                <span className="text-slate-300 font-semibold">{bestBuy ? bestBuy.bankName : 'Loading...'}</span>
+                <span className="text-[10px] text-slate-400 font-medium">(Best if you're selling USD)</span>
+              </div>
             </div>
-          </div>
 
-          <div className="absolute -right-12 top-16 w-64 glass-panel rounded-xl p-4 shadow-xl rotate-[5deg] animate-[blob_8s_infinite_alternate_reverse]">
-            <div className="text-xs text-slate-400 mb-1">Best Sell Rate</div>
-            <div className="text-xl font-bold text-white mb-2">{bestSell ? bestSell.sellRate.toFixed(2) : '--'} LKR</div>
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-300">{bestSell ? bestSell.bankName : 'Loading...'}</span>
-              <span className="text-primary">-0.1%</span>
+            <div className="w-full sm:w-72 md:w-64 glass-panel rounded-xl p-5 shadow-xl md:absolute md:-right-12 md:top-16 md:rotate-[5deg] md:animate-[blob_8s_infinite_alternate_reverse]">
+              <div className="text-xs text-slate-400 mb-1 font-medium tracking-wide uppercase">Lowest Sell Rate</div>
+              <div className="text-2xl font-bold text-primary mb-2">{bestSell ? bestSell.sellRate.toFixed(2) : '--'} LKR</div>
+              <div className="flex flex-col gap-1 text-xs">
+                <span className="text-slate-300 font-semibold">{bestSell ? bestSell.bankName : 'Loading...'}</span>
+                <span className="text-[10px] text-slate-400 font-medium">(Best if you're buying USD)</span>
+              </div>
             </div>
           </div>
         </div>

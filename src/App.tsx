@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import LandingPage from './pages/LandingPage';
@@ -14,10 +14,13 @@ import Forecasts from './pages/Forecasts';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
+  const location = useLocation();
+  const isAuthPage = ['/login', '/register'].includes(location.pathname);
+
   return (
     <AuthProvider>
       <div className="bg-background min-h-screen text-slate-200 font-sans selection:bg-primary/30 selection:text-white flex flex-col">
-      <Navbar />
+      {!isAuthPage && <Navbar />}
       
       <main className="flex-grow">
         <Routes>
@@ -33,7 +36,7 @@ function App() {
         </Routes>
       </main>
 
-      <Footer />
+      {!isAuthPage && <Footer />}
     </div>
     </AuthProvider>
   );

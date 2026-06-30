@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRightLeft, Sparkles, History, Clock, Star, Trophy, AlertCircle, Check, Copy, ChevronDown, Search, X } from 'lucide-react';
+import { ArrowRightLeft, Sparkles, History, Clock, Star, Trophy, AlertCircle, Check, Copy, ChevronDown, Search, X, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface BankRate {
   bankName: string;
@@ -137,6 +139,7 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({ value, onChange, cu
 };
 
 const CurrencyConverter = () => {
+  const { user } = useAuth();
   const [fromAmount, setFromAmount] = useState('100');
   const [toAmount, setToAmount] = useState('');
   const [fromCurrency, setFromCurrency] = useState('USD');
@@ -145,6 +148,90 @@ const CurrencyConverter = () => {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [lastEdited, setLastEdited] = useState<'from' | 'to'>('from');
+
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [savedConversions, setSavedConversions] = useState<any[]>([]);
+  const [savingConversion, setSavingConversion] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Fetch user profile on mount
+  useEffect(() => {
+    if (user?.token) {
+      fetch('http://localhost:8080/api/v1/user/profile', {
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) setUserProfile(data);
+        })
+        .catch(() => {});
+    }
+  }, [user]);
+
+  const fetchSavedConversions = async () => {
+    if (!user?.token) return;
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/conversions', {
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSavedConversions(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch saved conversions', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.token) {
+      fetchSavedConversions();
+    } else {
+      setSavedConversions([]);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    setSaved(false);
+  }, [fromAmount, fromCurrency, toCurrency]);
+
+  const handleSaveConversion = async () => {
+    if (!bestResult || !fromAmount || !user?.token) return;
+    setSavingConversion(true);
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/conversions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify({
+          fromCurrency,
+          toCurrency,
+          fromAmount: parseFloat(fromAmount),
+          toAmount: parseFloat(toAmount),
+          recommendedBank: bestResult.bank,
+          rate: bestResult.rate
+        })
+      });
+      if (response.ok) {
+        setSaved(true);
+        fetchSavedConversions();
+      }
+    } catch (err) {
+      console.error('Failed to save conversion', err);
+    } finally {
+      setSavingConversion(false);
+    }
+  };
+
+  const handleLoadSavedConversion = (item: any) => {
+    setFromAmount(item.fromAmount.toString());
+    setFromCurrency(item.fromCurrency);
+    setToCurrency(item.toCurrency);
+    setToAmount(item.toAmount.toString());
+    setLastEdited('from');
+  };
 
   const foreignCurrency = fromCurrency === 'LKR' ? toCurrency : fromCurrency;
   const pair = `${foreignCurrency}/LKR`;
@@ -320,7 +407,7 @@ const CurrencyConverter = () => {
                     value={fromAmount}
                     onChange={handleFromAmountChange}
                     placeholder="Enter amount"
-                    className="bg-transparent w-full px-3 text-white font-semibold text-sm focus:outline-none rounded-l-xl"
+                    className="bg-transparent w-full flex-1 min-w-0 px-3 text-white font-semibold text-sm focus:outline-none rounded-l-xl"
                   />
                   <CurrencyDropdown 
                     value={fromCurrency} 
@@ -351,7 +438,7 @@ const CurrencyConverter = () => {
                     value={toAmount}
                     onChange={handleToAmountChange}
                     placeholder="Converted Amount"
-                    className={`bg-transparent w-full px-3 text-primary font-semibold text-sm focus:outline-none rounded-l-xl ${loading ? 'animate-pulse opacity-60' : ''}`}
+                    className={`bg-transparent w-full flex-1 min-w-0 px-3 text-primary font-semibold text-sm focus:outline-none rounded-l-xl ${loading ? 'animate-pulse opacity-60' : ''}`}
                   />
                   <CurrencyDropdown 
                     value={toCurrency} 
@@ -372,12 +459,12 @@ const CurrencyConverter = () => {
               </div>
             )}
 
-            {/* ACTION BUTTON */}
-            <div className="mt-6 flex justify-center">
+            {/* ACTION BUTTONS */}
+            <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
               <button 
                 onClick={handleCopy}
                 disabled={!bestResult || !fromAmount}
-                className="bg-primary hover:bg-primary-dark text-background font-bold text-sm px-8 py-3 rounded-xl shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:shadow-[0_0_30px_rgba(0,240,255,0.6)] transform hover:-translate-y-0.5 active:translate-y-0 transition-all w-full md:w-auto flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none disabled:shadow-none"
+                className="bg-white/10 hover:bg-white/20 text-white font-semibold text-sm px-8 py-3 rounded-xl border border-white/10 transition-colors w-full sm:w-auto flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none disabled:shadow-none"
               >
                 {copied ? (
                   <>
@@ -391,6 +478,26 @@ const CurrencyConverter = () => {
                   </>
                 )}
               </button>
+
+              {user && (
+                <button 
+                  onClick={handleSaveConversion}
+                  disabled={!bestResult || !fromAmount || savingConversion}
+                  className="bg-primary hover:bg-primary-dark text-background font-bold text-sm px-8 py-3 rounded-xl shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:shadow-[0_0_30px_rgba(0,240,255,0.6)] transform hover:-translate-y-0.5 active:translate-y-0 transition-all w-full sm:w-auto flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none disabled:shadow-none"
+                >
+                  {saved ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Saved to Profile!
+                    </>
+                  ) : (
+                    <>
+                      <Star className="h-4 w-4" />
+                      {savingConversion ? 'Saving...' : 'Save Conversion'}
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
@@ -432,39 +539,128 @@ const CurrencyConverter = () => {
             {loading ? (
               <div className="py-8 text-center text-slate-400">Loading live bank rates...</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[500px]">
-                  <thead>
-                    <tr className="border-b border-white/10 text-slate-400 text-sm">
-                      <th className="pb-3 font-medium">Bank</th>
-                      <th className="pb-3 font-medium text-right">Converted Amount</th>
-                      <th className="pb-3 font-medium text-right">Exchange Rate</th>
-                      <th className="pb-3 font-medium text-right">Difference</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bankResults.map((result, index) => (
-                      <tr key={index} className={`border-b border-white/5 hover:bg-white/5 transition-colors ${result.best ? 'bg-primary/5' : ''}`}>
-                        <td className="py-4 text-white font-medium flex items-center gap-2">
-                          {result.best && <Trophy className="h-4 w-4 text-primary" />}
-                          {result.bank}
-                        </td>
-                        <td className={`py-4 text-right font-bold ${result.best ? 'text-primary' : 'text-white'}`}>{result.amount}</td>
-                        <td className="py-4 text-right text-slate-300 text-sm">{result.rateDisplay}</td>
-                        <td className="py-4 text-right">
-                          <span className={`text-sm font-medium px-2 py-1 rounded ${result.best ? 'bg-primary/20 text-primary' : result.diff.startsWith('+') ? 'bg-accent/10 text-accent' : 'bg-surface text-slate-400'}`}>
+              <div>
+                {/* Desktop/Tablet Table view */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[500px]">
+                    <thead>
+                      <tr className="border-b border-white/10 text-slate-400 text-sm">
+                        <th className="pb-3 font-medium">Bank</th>
+                        <th className="pb-3 font-medium text-right">Converted Amount</th>
+                        <th className="pb-3 font-medium text-right">Exchange Rate</th>
+                        <th className="pb-3 font-medium text-right">Difference</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bankResults.map((result, index) => {
+                        const isPreferred = userProfile?.preferredBank && result.bank === userProfile.preferredBank;
+                        return (
+                          <tr 
+                            key={index} 
+                            className={`border-b border-white/5 hover:bg-white/5 transition-colors ${
+                              result.best 
+                                ? 'bg-primary/5' 
+                                : isPreferred 
+                                  ? 'bg-yellow-500/5 border-yellow-500/20' 
+                                  : ''
+                            }`}
+                          >
+                            <td className={`py-4 text-white font-medium flex items-center gap-2 ${isPreferred ? 'text-yellow-400 font-bold' : ''}`}>
+                              {result.best && <Trophy className="h-4 w-4 text-primary" />}
+                              <span>{result.bank}</span>
+                              {isPreferred && (
+                                <span className="text-[9px] font-semibold text-yellow-400 bg-yellow-400/10 px-1.5 py-0.5 rounded flex items-center gap-0.5 ml-1">
+                                  ★ Preferred
+                                </span>
+                              )}
+                            </td>
+                            <td className={`py-4 text-right font-bold ${result.best ? 'text-primary' : isPreferred ? 'text-yellow-400' : 'text-white'}`}>{result.amount}</td>
+                            <td className={`py-4 text-right text-sm ${isPreferred ? 'text-yellow-300' : 'text-slate-300'}`}>{result.rateDisplay}</td>
+                            <td className="py-4 text-right">
+                              <span className={`text-sm font-medium px-2 py-1 rounded ${
+                                result.best 
+                                  ? 'bg-primary/20 text-primary' 
+                                  : isPreferred
+                                    ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                    : result.diff.startsWith('+') 
+                                      ? 'bg-accent/10 text-accent' 
+                                      : 'bg-surface text-slate-400'
+                              }`}>
+                                {result.diff}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {bankResults.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="py-8 text-center text-slate-500">No bank data available.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile list view */}
+                <div className="flex flex-col gap-3 sm:hidden">
+                  {bankResults.map((result, index) => {
+                    const isPreferred = userProfile?.preferredBank && result.bank === userProfile.preferredBank;
+                    return (
+                      <div 
+                        key={index} 
+                        className={`p-4 rounded-xl border transition-all ${
+                          result.best 
+                            ? 'bg-primary/5 border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)]' 
+                            : isPreferred
+                              ? 'bg-yellow-500/[0.03] border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.05)]'
+                              : 'bg-[#111827]/40 border-white/5'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-3">
+                          <div className="flex items-center gap-2">
+                            <img src={result.logo} alt={result.bank} className="w-6 h-6 rounded bg-white p-0.5" />
+                            <span className={`font-bold text-sm ${isPreferred ? 'text-yellow-400' : 'text-white'}`}>{result.bank}</span>
+                            {isPreferred && (
+                              <span className="text-[9px] font-semibold text-yellow-400 bg-yellow-400/10 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                ★ Preferred
+                              </span>
+                            )}
+                          </div>
+                          {result.best && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                              <Trophy className="h-3 w-3" /> BEST
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex justify-between items-center text-xs mb-2">
+                          <span className="text-slate-400">Converted Amount</span>
+                          <span className={`font-bold ${result.best ? 'text-primary' : isPreferred ? 'text-yellow-400' : 'text-white'}`}>{result.amount}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs mb-2">
+                          <span className="text-slate-400">Exchange Rate</span>
+                          <span className={`${isPreferred ? 'text-yellow-300' : 'text-slate-300'}`}>{result.rate.toFixed(2)} LKR</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-slate-400">Difference</span>
+                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${
+                            result.best 
+                              ? 'bg-primary/20 text-primary' 
+                              : isPreferred
+                                ? 'bg-yellow-500/20 text-yellow-400'
+                                : result.diff.startsWith('+') 
+                                  ? 'bg-accent/10 text-accent' 
+                                  : 'bg-surface text-slate-500'
+                          }`}>
                             {result.diff}
                           </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {bankResults.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="py-8 text-center text-slate-500">No bank data available.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {bankResults.length === 0 && (
+                    <div className="py-8 text-center text-slate-500">No bank data available.</div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -506,32 +702,43 @@ const CurrencyConverter = () => {
               </h3>
             </div>
             
-            <div className="space-y-3">
-              {history.map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-surface/50 border border-transparent hover:border-white/5 cursor-pointer transition-colors">
-                  <div className="flex items-center gap-3">
-                    <button className={`${item.favorite ? 'text-yellow-400' : 'text-slate-600 hover:text-yellow-400'} transition-colors`}>
-                      <Star className="h-4 w-4 fill-current" />
-                    </button>
-                    <div>
-                      <div className="text-white font-medium text-sm">{item.from} → {item.to}</div>
-                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                        <Clock className="h-3 w-3" /> {item.date}
+            {!user ? (
+              <div className="text-center py-8 px-4 bg-surface/30 rounded-xl border border-dashed border-white/10">
+                <Lock className="h-6 w-6 text-slate-500 mx-auto mb-2" />
+                <p className="text-xs text-slate-300 font-medium mb-3">Save & track your conversions history</p>
+                <Link to="/login" className="inline-block text-xs bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 px-3 py-1.5 rounded-lg font-medium transition-all hover:scale-[1.02] duration-200">
+                  Log In to Unlock
+                </Link>
+              </div>
+            ) : savedConversions.length === 0 ? (
+              <div className="text-center py-8 text-xs text-slate-500">
+                No saved conversions yet. Convert and save above!
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
+                {savedConversions.map((item, i) => (
+                  <div 
+                    key={item.id || i} 
+                    onClick={() => handleLoadSavedConversion(item)}
+                    className="flex items-center justify-between p-3 rounded-xl bg-surface/50 border border-transparent hover:border-primary/20 cursor-pointer transition-all hover:bg-white/5"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <div className="text-white font-medium text-xs md:text-sm">
+                          {item.fromAmount.toLocaleString()} {item.fromCurrency} → {item.toCurrency}
+                        </div>
+                        <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-1">
+                          <Clock className="h-3 w-3" /> {new Date(item.timestamp).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                        </div>
                       </div>
                     </div>
+                    <button className="text-primary hover:text-primary-dark p-2 bg-primary/10 rounded-lg transition-colors">
+                      <ArrowRightLeft className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <button className="text-primary hover:text-primary-dark p-2 bg-primary/10 rounded-lg transition-colors">
-                    <ArrowRightLeft className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            
-            <div className="mt-4 pt-4 border-t border-white/10 text-center">
-              <button className="text-sm text-slate-400 hover:text-white transition-colors">
-                View Full History
-              </button>
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>

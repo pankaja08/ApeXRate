@@ -63,23 +63,23 @@ const DashboardPreview = () => {
           <div className="lg:w-2/3 w-full">
             <div className="glass-panel rounded-2xl p-6 shadow-2xl border border-white/10 relative">
               {/* Header */}
-              <div className="flex justify-between items-center mb-8">
-                <div className="flex gap-2 bg-surface p-1 rounded-lg border border-white/5">
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-8">
+                <div className="flex gap-2 bg-surface p-1 rounded-lg border border-white/5 w-full sm:w-auto">
                   <button 
                     onClick={() => setActiveTab('usd')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'usd' ? 'bg-primary text-background' : 'text-slate-400 hover:text-white'}`}
+                    className={`flex-1 sm:flex-initial px-4 py-2 rounded-md text-sm font-medium transition-all text-center ${activeTab === 'usd' ? 'bg-primary text-background' : 'text-slate-400 hover:text-white'}`}
                   >
                     USD / LKR
                   </button>
                   <button 
                     onClick={() => setActiveTab('eur')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'eur' ? 'bg-primary text-background' : 'text-slate-400 hover:text-white'}`}
+                    className={`flex-1 sm:flex-initial px-4 py-2 rounded-md text-sm font-medium transition-all text-center ${activeTab === 'eur' ? 'bg-primary text-background' : 'text-slate-400 hover:text-white'}`}
                   >
                     EUR / LKR
                   </button>
                 </div>
                 
-                <button className="flex items-center gap-2 text-sm text-slate-300 bg-surface px-4 py-2 rounded-lg border border-white/5 hover:bg-white/5 transition-colors">
+                <button className="flex items-center justify-center gap-2 text-sm text-slate-300 bg-surface px-4 py-2 rounded-lg border border-white/5 hover:bg-white/5 transition-colors w-full sm:w-auto">
                   Last 7 Days <ChevronDown className="h-4 w-4" />
                 </button>
               </div>
